@@ -1,0 +1,8 @@
+
+--watch
+--watch-extensions ts
+--recursive
+--require ts-node/register
+--reporter min
+--slow 20000
+--timeout 180000
