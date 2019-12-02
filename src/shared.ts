@@ -1,6 +1,7 @@
 
 import * as fs from 'fs';
 import * as os from 'os';
+import winston from 'winston';
 
 export interface ISolution {
    readonly dayNumber: Number;
@@ -43,5 +44,20 @@ export class OutputFile {
 export class Util {
    static range(size : number, startAt : number = 0) : number[] {
       return [...Array(size).keys()].map(i => i + startAt);
+   }
+
+   static padZero(value : number, size : number) {
+      return (''+value).padStart(size, '0');
+   }
+
+   static createLogger() : winston.Logger {
+      return winston.createLogger({
+         level: 'info',
+         format: winston.format.simple(),
+         transports: [
+            new winston.transports.Console(),
+            new winston.transports.File({ filename: './output.log' })
+         ]
+      })
    }
 }

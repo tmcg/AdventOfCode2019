@@ -5,7 +5,7 @@
   "scripts": {
     "index": "ts-node src/index.ts",
     "start": "mocha --opts mocha.opts src/**/*.spec.ts",
-    "test": "mocha --opts mocha.opts src/**/advent01.spec.ts"
+    "test": "mocha --opts mocha.opts"
   },
   "author": "Tony McGee <tmcgee.au@gmail.com>",
   "license": "ISC",
@@ -13,9 +13,11 @@
     "@types/chai": "^4.2.5",
     "@types/mocha": "^5.2.7",
     "@types/node": "^12.12.14",
+    "@types/winston": "^2.4.4",
     "chai": "^4.2.0",
     "mocha": "^6.2.2",
     "ts-node": "^8.5.4",
-    "typescript": "^3.7.2"
+    "typescript": "^3.7.2",
+    "winston": "^3.2.1"
   }
 }

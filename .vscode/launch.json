@@ -1,0 +1,19 @@
+{
+   "version": "0.2.0",
+   "configurations": [
+      {
+         "type": "node",
+         "request": "launch",
+         "name": "Mocha Single",
+         "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+         "args": [
+            "--opts",
+            "mocha.opts",
+            "${workspaceFolder}/src/advent01/solution.spec.ts",
+         ],
+         "console": "integratedTerminal",
+         "internalConsoleOptions": "neverOpen",
+         "protocol": "inspector",
+      }
+   ]
+}
