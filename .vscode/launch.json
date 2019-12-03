@@ -9,7 +9,7 @@
          "args": [
             "--opts",
             "mocha.opts",
-            "${workspaceFolder}/src/advent01/solution.spec.ts",
+            "${workspaceFolder}/src/advent03/solution.spec.ts",
          ],
          "console": "integratedTerminal",
          "internalConsoleOptions": "neverOpen",
