@@ -1,6 +1,6 @@
 
 import { ISolution, InputFile, Util } from '../shared';
-const logger = Util.createLogger();
+//const logger = Util.createLogger();
 
 interface IInstruction {
    opcode : number;
@@ -11,6 +11,7 @@ interface IInstruction {
 export class IntComputer {
    _memory : number[] = [];
    _instPtr : number = 0;
+   halt : boolean = false;
    stdin : number[] = [];
    stdout : number[] = [];
 
@@ -73,6 +74,9 @@ export class IntComputer {
 
       //logger.info(`ip=${this._instPtr} :: ${JSON.stringify(inst)}`);
 
+      if (inst.opcode === 3 && this.stdin.length === 0)
+         throw new Error(`No input available!`);
+
       switch(inst.opcode) {
          case 1: this.store(inst.operands[2], deref(0) + deref(1)); break;
          case 2: this.store(inst.operands[2], deref(0) * deref(1)); break;
@@ -82,19 +86,23 @@ export class IntComputer {
          case 6: nextInstPtr = deref(0) === 0 ? deref(1) : nextInstPtr; break;
          case 7: this.store(inst.operands[2], deref(0) < deref(1) ? 1 : 0); break;
          case 8: this.store(inst.operands[2], deref(0) === deref(1) ? 1 : 0); break;
-         case 99: return false;
+         case 99: this.halt = true; return false;
          default: throw new Error(`Invalid instruction: ${inst.opcode}`);
       }
 
       this._instPtr = nextInstPtr;
+      if (inst.opcode === 4)
+         return false;
       return true;
    }
 
-   run(stdin : number[]) : number[] {
-      this.stdin = stdin;
-      this.stdout = [];
+   run() : number[] {
       while (this.step());
       return this.stdout;
+   }
+
+   pipe(stdin: number[]) {
+      this.stdin = this.stdin.concat(stdin);
    }
 }
 
@@ -120,12 +128,16 @@ class Solution implements ISolution {
       let bestOutput : number = 0;
 
       for (const phaseSet of phaseSequence()) {
-         let ampOut : number[] = [0];
-         for (const a of Util.range(5))
-            ampOut = IntComputer.fromInput(input).run([phaseSet[a],ampOut[0]]);
+         let ampOut : number = 0;
+         let amps = Util.range(5).map(n => IntComputer.fromInput(input));
 
-         if (ampOut[0] > bestOutput)
-            bestOutput = ampOut[0];
+         for (const a of Util.range(amps.length)) {
+            amps[a].pipe([phaseSet[a],ampOut])
+            ampOut = amps[a].run()[0];
+         }
+
+         if (ampOut > bestOutput)
+            bestOutput = ampOut;
       }
 
       return ''+bestOutput;
@@ -136,13 +148,24 @@ class Solution implements ISolution {
       const input = inputFile.readText();
       let bestOutput : number = 0;
 
-      /*
-      for (const phaseSet of phaseSequence()) {
+      for (const phaseSet of phaseSequence(5)) {
+         let ampOut : number = 0;
          let amps = Util.range(5).map(n => IntComputer.fromInput(input));
 
-         //todo implement continuations in IntComputer
+         for (const a of Util.range(amps.length)) {
+            amps[a].pipe([phaseSet[a]]);
+         }
+
+         while (!amps[amps.length - 1].halt) {
+            for (const a of Util.range(amps.length)) {
+               amps[a].pipe([ampOut]);
+               ampOut = amps[a].run().slice(-1)[0];
+            }
+         }
+
+         if (ampOut > bestOutput)
+            bestOutput = ampOut;
       }
-      */
 
       return ''+bestOutput;
    }
