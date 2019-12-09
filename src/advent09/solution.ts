@@ -58,8 +58,8 @@ export class IntComputer {
    }
 
    load(address : number) : number {
-      if (this._memory.length <= address) return 0;
-      return this._memory[address];
+      const result = this._memory[address];
+      return typeof result === 'undefined' ? 0 : result;
    }
 
    loadArray(address : number, length : number) : number[] {
