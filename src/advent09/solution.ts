@@ -8,21 +8,48 @@ interface IInstruction {
    modes : number[];
 }
 
+interface IIntStream {
+   read() : number;
+   write(n : number) : void;
+}
+
+export class BasicIntStream implements IIntStream {
+   input : number[] = [];
+   output : number[] = [];
+
+   read() : number {
+      if (this.input.length === 0)
+         throw new Error(`No input available!`);
+
+      return this.input.shift()!;
+   }
+
+   write(n : number) {
+      this.output.push(n);
+   }
+
+   pipe(values: number[]) : BasicIntStream {
+      this.input = this.input.concat(values);
+      return this;
+   }
+}
+
 export class IntComputer {
    _memory : number[] = [];
    _instPtr : number = 0;
    _basePtr : number = 0;
+   _iostream : IIntStream;
    halt : boolean = false;
-   stdin : number[] = [];
-   stdout : number[] = [];
 
-   constructor(memory: number[])
+
+   constructor(memory: number[], io : IIntStream)
    {
       this._memory = memory.slice();
+      this._iostream = io;
    }
 
-   static fromInput(input : string) {
-      return new IntComputer(input.split(',').map(s => +s));
+   static fromInput(input : string, io : IIntStream) : IntComputer {
+      return new IntComputer(input.split(',').map(s => +s), io);
    }
 
    instructionModes(rawCode : number, count : number) : number[] {
@@ -70,7 +97,7 @@ export class IntComputer {
       this._memory[address] = value;
    }
 
-   step() : boolean {
+   step(untilCodes : number[]) : boolean {
       const inst = this.decode(this._instPtr);
       const offset = (n : number) => { return inst.modes[n] === 2 ? this._basePtr : 0; }
       const deref = (n : number) => { return inst.modes[n] === 1 ? inst.operands[n] : this.load(inst.operands[n] + offset(n)); }
@@ -78,43 +105,32 @@ export class IntComputer {
 
       //logger.info(`ip=${this._instPtr} :: ${JSON.stringify(inst)}`);
 
-      if (inst.opcode === 3 && this.stdin.length === 0)
-         throw new Error(`No input available!`);
-
       switch(inst.opcode) {
          case 1: this.store(inst.operands[2] + offset(2), deref(0) + deref(1)); break;
          case 2: this.store(inst.operands[2] + offset(2), deref(0) * deref(1)); break;
-         case 3: this.store(inst.operands[0] + offset(0), this.stdin[0]); this.stdin = this.stdin.slice(1); break;
-         case 4: this.stdout.push(deref(0)); break;
+         case 3: this.store(inst.operands[0] + offset(0), this._iostream.read()); break;
+         case 4: this._iostream.write(deref(0)); break;
          case 5: nextInstPtr = deref(0) === 0 ? nextInstPtr : deref(1); break;
          case 6: nextInstPtr = deref(0) === 0 ? deref(1) : nextInstPtr; break;
          case 7: this.store(inst.operands[2] + offset(2), deref(0) < deref(1) ? 1 : 0); break;
          case 8: this.store(inst.operands[2] + offset(2), deref(0) === deref(1) ? 1 : 0); break;
          case 9: this._basePtr += deref(0); break;
-         case 99: this.halt = true; return false;
+         case 99: this.halt = true; nextInstPtr = this._instPtr; break;
          default: throw new Error(`Invalid instruction: ${inst.opcode}`);
       }
 
       this._instPtr = nextInstPtr;
-      if (inst.opcode === 4)
-         return false;
-      return true;
+      return !untilCodes.includes(inst.opcode);
    }
 
-   run() : number[] {
-      while(this.step());
-      return this.stdout;
+   runToPause() : IntComputer {
+      while(this.step([99,4]));
+      return this;
    }
 
-   runToHalt() : number[] {
-      while(!this.halt)
-         this.step();
-      return this.stdout;
-   }
-
-   pipe(stdin: number[]) : IntComputer {
-      this.stdin = this.stdin.concat(stdin);
-      return this
+   runToHalt() : IntComputer {
+      while(this.step([99]));
+      return this;
    }
 }
 
@@ -123,16 +139,18 @@ class Solution implements ISolution {
 
    solvePart1() : string {
       const input = new InputFile(this.dayNumber).readText();
-      const comp = IntComputer.fromInput(input).pipe([1])
+      const io = new BasicIntStream().pipe([1]);
+      IntComputer.fromInput(input,io).runToHalt();
 
-      return ''+comp.runToHalt().join(',');
+      return ''+io.output.join(',');
    }
 
    solvePart2() : string {
       const input = new InputFile(this.dayNumber).readText();
-      const comp = IntComputer.fromInput(input).pipe([2])
+      const io = new BasicIntStream().pipe([2]);
+      IntComputer.fromInput(input, io).runToHalt();
 
-      return ''+comp.runToHalt().join(',');
+      return ''+io.output.join(',');
    }
 }
 
