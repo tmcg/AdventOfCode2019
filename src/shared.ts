@@ -25,6 +25,12 @@ export interface IPosition {
    y : number
 }
 
+export interface Vec3 {
+   x : number;
+   y : number;
+   z : number;
+}
+
 export class InputFile {
    _fileName : string;
 
