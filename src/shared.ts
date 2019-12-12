@@ -9,6 +9,22 @@ export interface ISolution {
    solvePart2() : string;
 }
 
+export enum Compass {
+   North = 0,
+   East = 1,
+   South = 2,
+   West = 3
+}
+
+export function CompassTurn(direction : Compass, left : boolean) : Compass {
+   return (direction + (left ? 3 : 1)) % 4;
+}
+
+export interface IPosition {
+   x : number,
+   y : number
+}
+
 export class InputFile {
    _fileName : string;
 
