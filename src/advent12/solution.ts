@@ -1,5 +1,6 @@
 
 import { ISolution, InputFile, Util, Vec3 } from '../shared';
+import { lcm } from 'mathjs';
 //const logger = Util.createLogger();
 
 class Moon {
@@ -65,42 +66,76 @@ class Solution implements ISolution {
       });
    }
 
-   timeStep(moons: Moon[], steps : number = 1) {
+   timeStep(moons: Moon[]) {
 
-      for (let t = 0; t < steps; t++) {
-         /*
-         logger.info(`step: ${t}`);
-         for (const moon of moons) {
-            const p = moon.position;
-            const v = moon.velocity;
-            logger.info(`pos=(${p.x},${p.y},${p.z})  vel=(${v.x},${v.y},${v.z})`);
-         }
-         */
+      /*
+      logger.info(`step: ${t}`);
+      for (const moon of moons) {
+         const p = moon.position;
+         const v = moon.velocity;
+         logger.info(`pos=(${p.x},${p.y},${p.z})  vel=(${v.x},${v.y},${v.z})`);
+      }
+      */
 
-         for (let j = 0; j < moons.length; j++) {
-            for (let i = 0; i < moons.length; i++) {
-               if (j > i)
-                  moons[i].applyGravity(moons[j]);
-            }
+      for (let j = 0; j < moons.length; j++) {
+         for (let i = 0; i < moons.length; i++) {
+            if (j > i)
+               moons[i].applyGravity(moons[j]);
          }
+      }
 
-         for (const moon of moons) {
-            moon.applyVelocity();
-         }
+      for (const moon of moons) {
+         moon.applyVelocity();
       }
    }
 
    solvePart1() : string {
       const moons = this.readInput();
-      this.timeStep(moons, 1000);
+      for (let t = 0; t < 1000; t++)
+         this.timeStep(moons);
 
       return ''+moons.map(m => m.potentialEnergy() * m.kineticEnergy()).reduce((a,b) => a + b, 0);
    }
 
    solvePart2() : string {
-      // todo
+      const moons = this.readInput();
 
-      return '';
+      let cycle = 0;
+      let foundX = -1;
+      let foundY = -1;
+      let foundZ = -1;
+      let setX = new Set();
+      let setY = new Set();
+      let setZ = new Set();
+
+      const cycleState = (mx : Moon[], cf: (v : Vec3) => number) =>
+         mx.map(m => `${cf(m.position)}+${cf(m.velocity)}`).join('|');
+
+      while (foundX < 0 || foundY < 0 || foundZ < 0) {
+         this.timeStep(moons);
+         if (foundX < 0) {
+            let pv = cycleState(moons, (v) => v.x);
+            if (setX.has(pv))
+               foundX = cycle;
+            setX.add(pv);
+         }
+         if (foundY < 0) {
+            let pv = cycleState(moons, (v) => v.y);
+            if (setY.has(pv))
+               foundY = cycle;
+            setY.add(pv);
+         }
+         if (foundZ < 0) {
+            let pv = cycleState(moons, (v) => v.z);
+            if (setZ.has(pv))
+               foundZ = cycle;
+            setZ.add(pv);
+         }
+         cycle++;
+      }
+
+      //logger.info(`${foundX},${foundY},${foundZ}`);
+      return ''+lcm(foundX, lcm(foundY, foundZ));
    }
 }
 
