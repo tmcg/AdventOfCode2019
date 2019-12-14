@@ -14,12 +14,16 @@
     "@types/mathjs": "^6.0.2",
     "@types/mocha": "^5.2.7",
     "@types/node": "^12.12.14",
+    "@types/readline-sync": "^1.4.3",
     "@types/winston": "^2.4.4",
     "chai": "^4.2.0",
     "mathjs": "^6.2.5",
     "mocha": "^6.2.2",
-    "ts-node": "^8.5.4",
+    "readline-sync": "^1.4.10",
     "typescript": "^3.7.2",
     "winston": "^3.2.1"
+  },
+  "devDependencies": {
+    "ts-node": "^8.5.4"
   }
 }

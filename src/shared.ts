@@ -4,7 +4,7 @@ import * as os from 'os';
 import winston from 'winston';
 
 export interface ISolution {
-   readonly dayNumber: Number;
+   readonly dayNumber: number;
    solvePart1() : string;
    solvePart2() : string;
 }
@@ -20,7 +20,9 @@ export function CompassTurn(direction : Compass, left : boolean) : Compass {
    return (direction + (left ? 3 : 1)) % 4;
 }
 
-export interface IPosition {
+export interface IPosition extends Vec2 {}
+
+export interface Vec2 {
    x : number,
    y : number
 }
