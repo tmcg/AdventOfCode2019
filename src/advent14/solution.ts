@@ -52,8 +52,8 @@ export class FuelFactory {
       return new FuelFactory(reactions);
    }
 
-   createFuel() {
-      this.process('FUEL');
+   createFuel(multiplier : number) {
+      this.process('FUEL', multiplier);
 
       const products = Object.keys(this.store).filter(k => k !== 'FUEL' && k !== 'ORE');
       const findDeficit = () : string => {
@@ -63,16 +63,18 @@ export class FuelFactory {
 
       let next = findDeficit()
       while (next !== '') {
-         this.process(next);
+         const nextRatio = this.reactions[next].product.amount;
+         const nextDeficit = -this.store[next];
+         this.process(next, Math.ceil(nextDeficit / nextRatio));
          next = findDeficit();
       }
    }
 
-   process(code: string) {
+   process(code: string, multiplier : number) {
       const reaction = this.reactions[code];
-      this.store[reaction.product.code] += (reaction.product.amount);
+      this.store[reaction.product.code] += (reaction.product.amount * multiplier);
       for (const reactant of reaction.reactants) {
-         this.store[reactant.code] -= (reactant.amount);
+         this.store[reactant.code] -= (reactant.amount * multiplier);
       }
    }
 
@@ -90,15 +92,33 @@ class Solution implements ISolution {
    solvePart1() : string {
       const input = new InputFile(this.dayNumber).readLines();
       const factory = FuelFactory.fromInput(input);
-      factory.createFuel();
+      factory.createFuel(1);
 
       return ''+(-factory.store['ORE']);
    }
 
    solvePart2() : string {
+      const input = new InputFile(this.dayNumber).readLines();
+      const factory = FuelFactory.fromInput(input);
 
-      // TODO
-      return ''
+      let oneMillion = 1000000;
+      let oneTrillion = oneMillion * oneMillion;
+
+      const backoff = [100000,10000,1000,100,10];
+      let ore = 0, step = 0;
+
+      while (ore < oneTrillion) {
+         let multiplier = backoff[0];
+         for (const threshold of backoff.map(n => ((oneMillion-n)*oneMillion))) {
+            if (ore > threshold) multiplier /= 10;
+         }
+
+         factory.createFuel(multiplier);
+         ore = -factory.store['ORE'];
+         //logger.info(`${step++} (${multiplier}) -> ${ore}`);
+      }
+
+      return ''+(factory.store['FUEL']-1);
    }
 }
 
