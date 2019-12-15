@@ -1,11 +1,12 @@
 
-import solution,{ IntComputer } from './solution';
+import solution from './solution';
+import { IntComputer, BasicIntStream } from '../intcode';
 import { expect } from 'chai';
 import 'mocha';
 
 describe(`Advent of Code Day ${solution.dayNumber}`, () => {
   it('should decode instructions (1)', () => {
-    const c1 = IntComputer.fromInput('99');
+    const c1 = IntComputer.fromInput('99', new BasicIntStream());
 
     expect(c1.instructionLength(1)).to.equal(4);
     expect(c1.instructionLength(2)).to.equal(4);
@@ -19,7 +20,7 @@ describe(`Advent of Code Day ${solution.dayNumber}`, () => {
   });
 
   it('should decode instructions (2)', () => {
-    const c1 = IntComputer.fromInput('1,4,5,6,2,7,8,9,3,45,4,54,99');
+    const c1 = IntComputer.fromInput('1,4,5,6,2,7,8,9,3,45,4,54,99', new BasicIntStream());
 
     let cx = c1.decode(0);
     expect(cx.opcode).to.equal(1);
@@ -48,7 +49,7 @@ describe(`Advent of Code Day ${solution.dayNumber}`, () => {
   });
 
   it('should decode instructions (3)', () => {
-    const c1 = IntComputer.fromInput('102,2,3,4,1002,3,4,5,10002,4,5,6,99');
+    const c1 = IntComputer.fromInput('102,2,3,4,1002,3,4,5,10002,4,5,6,99', new BasicIntStream());
     let cx = c1.decode(0);
     expect(cx.opcode).to.equal(2);
     expect(cx.operands).eql([2,3,4]);
@@ -70,7 +71,7 @@ describe(`Advent of Code Day ${solution.dayNumber}`, () => {
   });
 
   it('should decode instructions (4)', () => {
-    const c1 = IntComputer.fromInput('5,0,33,5,1,33,6,0,34,6,1,34,7,0,1,35,7,1,0,35,8,0,1,36,8,1,1,36');
+    const c1 = IntComputer.fromInput('5,0,33,5,1,33,6,0,34,6,1,34,7,0,1,35,7,1,0,35,8,0,1,36,8,1,1,36', new BasicIntStream());
     let cx = c1.decode(0);
     expect(cx.opcode).to.equal(5);
     expect(cx.operands).eql([0,33]);
@@ -105,54 +106,62 @@ describe(`Advent of Code Day ${solution.dayNumber}`, () => {
   });
 
   it('should execute opcode 5', () => {
-
-    const c1 = IntComputer.fromInput('1105,1,4,99,99'); c1.run('');
+    const c1 = IntComputer.fromInput('1105,1,4,99,99', new BasicIntStream()).runToHalt();
     expect(c1._instPtr).to.equal(4);
 
-    const c2 = IntComputer.fromInput('1105,0,4,99,99'); c2.run('');
+    const c2 = IntComputer.fromInput('1105,0,4,99,99', new BasicIntStream()).runToHalt();
     expect(c2._instPtr).to.equal(3);
 
-    const c3 = IntComputer.fromInput('5,5,6,99,99,1,4'); c3.run('');
+    const c3 = IntComputer.fromInput('5,5,6,99,99,1,4', new BasicIntStream()).runToHalt();
     expect(c3._instPtr).to.equal(4);
 
-    const c4 = IntComputer.fromInput('5,5,6,99,99,0,3'); c4.run('');
+    const c4 = IntComputer.fromInput('5,5,6,99,99,0,3', new BasicIntStream()).runToHalt();
     expect(c4._instPtr).to.equal(3);
   });
 
   it('should execute opcode 6', () => {
-    const c1 = IntComputer.fromInput('1106,1,4,99,99'); c1.run('');
+    const c1 = IntComputer.fromInput('1106,1,4,99,99', new BasicIntStream()).runToHalt();
     expect(c1._instPtr).to.equal(3);
 
-    const c2 = IntComputer.fromInput('1106,0,4,99,99'); c2.run('');
+    const c2 = IntComputer.fromInput('1106,0,4,99,99', new BasicIntStream()).runToHalt();
     expect(c2._instPtr).to.equal(4);
 
-    const c3 = IntComputer.fromInput('6,5,6,99,99,1,3'); c3.run('');
+    const c3 = IntComputer.fromInput('6,5,6,99,99,1,3', new BasicIntStream()).runToHalt();
     expect(c3._instPtr).to.equal(3);
 
-    const c4 = IntComputer.fromInput('6,5,6,99,99,0,4'); c4.run('');
+    const c4 = IntComputer.fromInput('6,5,6,99,99,0,4', new BasicIntStream()).runToHalt();
     expect(c4._instPtr).to.equal(4);
   });
 
   it('should execute opcode 7', () => {
-    const c1 = IntComputer.fromInput('1107,1,4,5,99,99'); c1.run('');
+    const c1 = IntComputer.fromInput('1107,1,4,5,99,99', new BasicIntStream()).runToHalt();
     expect(c1.dump()).eql([1107,1,4,5,99,1]);
 
-    const c2 = IntComputer.fromInput('1107,4,1,5,99,99'); c2.run('');
+    const c2 = IntComputer.fromInput('1107,4,1,5,99,99', new BasicIntStream()).runToHalt();
     expect(c2.dump()).eql([1107,4,1,5,99,0]);
 
-    const c3 = IntComputer.fromInput('7,5,6,7,99,1,4,99'); c3.run('');
+    const c3 = IntComputer.fromInput('7,5,6,7,99,1,4,99', new BasicIntStream()).runToHalt();
     expect(c3.dump()).eql([7,5,6,7,99,1,4,1]);
 
-    const c4 = IntComputer.fromInput('7,5,6,7,99,4,1,99'); c4.run('');
+    const c4 = IntComputer.fromInput('7,5,6,7,99,4,1,99', new BasicIntStream()).runToHalt();
     expect(c4.dump()).eql([7,5,6,7,99,4,1,0]);
   });
 
   it('should execute full sample', () => {
     const input = '3,21,1008,21,8,20,1005,20,22,107,8,21,20,1006,20,31,1106,0,36,98,0,0,1002,21,125,20,4,20,1105,1,46,104,999,1105,1,46,1101,1000,1,20,4,20,1105,1,46,98,99';
 
-    expect(IntComputer.fromInput(input).run('7')).to.equal('999');
-    expect(IntComputer.fromInput(input).run('8')).to.equal('1000');
-    expect(IntComputer.fromInput(input).run('9')).to.equal('1001');
+    const s1 = new BasicIntStream().pipe([7]);
+    IntComputer.fromInput(input, s1).runToHalt();
+
+    const s2 = new BasicIntStream().pipe([8]);
+    IntComputer.fromInput(input, s2).runToHalt();
+
+    const s3 = new BasicIntStream().pipe([9]);
+    IntComputer.fromInput(input, s3).runToHalt();
+
+    expect(s1.output).eql([999]);
+    expect(s2.output).eql([1000]);
+    expect(s3.output).eql([1001]);
   });
 
   it('should solve part 1', () => {
