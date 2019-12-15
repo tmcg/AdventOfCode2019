@@ -238,8 +238,15 @@ export class RepairDroid implements IIntStream {
    }
 
    findOxygenTime() : number {
-      // todo
-      return 0;
+      let oxygenTime : number = 0;
+      for (let j = 0; j < this.board.length; j++) {
+         for (let i = 0; i < this.board[j].length; i++) {
+            if (this.board[j][i].glyph === ' ' && this.board[j][i].cost > oxygenTime) {
+               oxygenTime = this.board[j][i].cost;
+            }
+         }
+      }
+      return oxygenTime;
    }
 
    read() : number {
