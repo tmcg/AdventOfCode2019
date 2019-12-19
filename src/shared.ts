@@ -33,6 +33,18 @@ export interface Vec3 {
    z : number;
 }
 
+export class Vector2 implements Vec2 {
+   constructor(public x: number, public y: number) {}
+}
+
+export class Vector3 implements Vec3 {
+   constructor(public x: number, public y: number, public z: number) {}
+}
+
+export interface Dictionary<T> {
+   [key: string]: T;
+}
+
 export class InputFile {
    _fileName : string;
 
