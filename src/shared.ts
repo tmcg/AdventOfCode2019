@@ -35,10 +35,14 @@ export interface Vec3 {
 
 export class Vector2 implements Vec2 {
    constructor(public x: number, public y: number) {}
+
+   id = () => `${this.x},${this.y}`;
 }
 
 export class Vector3 implements Vec3 {
    constructor(public x: number, public y: number, public z: number) {}
+
+   id = () => `${this.x},${this.y},${this.z}`;
 }
 
 export interface Dictionary<T> {
@@ -48,8 +52,8 @@ export interface Dictionary<T> {
 export class InputFile {
    _fileName : string;
 
-   constructor(dayNumber : number) {
-      this._fileName = `./src/advent${(''+dayNumber).padStart(2,'0')}/input.txt`;
+   constructor(dayNumber : number, fileName: string = 'input.txt') {
+      this._fileName = `./src/advent${(''+dayNumber).padStart(2,'0')}/${fileName}`;
    }
 
    readLines() : string[] {

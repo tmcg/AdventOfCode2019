@@ -5,7 +5,7 @@
   "scripts": {
     "index": "ts-node src/index.ts",
     "start": "mocha --opts mocha.opts src/**/*.spec.ts",
-    "test": "mocha --opts mocha.opts src/advent19/*.spec.ts"
+    "test": "mocha --opts mocha.opts src/advent20/*.spec.ts"
   },
   "author": "Tony McGee <tmcgee.au@gmail.com>",
   "license": "ISC",
