@@ -7,17 +7,20 @@ const logger = Util.createLogger();
 export class MazeSquare extends Vector2 {
    glyph: string = ''
    label: string = '';
+   outer: boolean = false;
 
-   constructor(x: number, y: number, glyph: string, label: string = '') {
+   constructor(x: number, y: number, glyph: string, label: string = '', outer: boolean = false) {
       super(x, y);
       this.glyph = glyph;
       this.label = label;
+      this.outer = outer;
    }
 }
 
 export class Maze {
    board: Dictionary<MazeSquare> = {}
    graph: Graph = new Graph;
+   portals: MazeSquare[] = [];
    extent1: Vec2 = { x: 0, y: 0 }
    extent2: Vec2 = { x: 0, y: 0 }
 
@@ -45,18 +48,22 @@ export class Maze {
       let ext1: Vec2 = { x: 0, y: 0 }
       let ext2: Vec2 = { x: 0, y: 0 }
 
+      let jmin = 2, jmax = input.length - 2;
+      let imin = 2, imax = input[0].length - 2;
+
       // squares
-      for (let j = 2; j < input.length - 2; j++) {
-         for (let i = 2; i < input[j].length - 2; i++) {
+      for (let j = jmin; j < jmax; j++) {
+         for (let i = jmin; i < imax; i++) {
             const ch = input[j][i];
             const glyph = ch === '#' || ch === '.' ? ch : ' ';
-            const pos = { x: i - 2, y: j - 2 }
+            const pos = { x: i - imin, y: j - jmin }
             ext1.x = Math.min(pos.x, ext1.x);
             ext1.y = Math.min(pos.y, ext1.y);
             ext2.x = Math.max(pos.x, ext2.x);
             ext2.y = Math.max(pos.y, ext2.y);
 
-            const sq = new MazeSquare(pos.x, pos.y, glyph)
+            const outer = i === imin || j === jmin || imax === i + 1 || jmax === j + 1;
+            const sq = new MazeSquare(pos.x, pos.y, glyph, '', outer);
 
             // labels
             if (glyph === '.') {
@@ -74,52 +81,28 @@ export class Maze {
                else if (down.match(label))
                   sq.label = down;
             }
-
+            if (sq.label !== '')
+               result.portals.push(sq);
             result.board[sq.id()] = sq;
          }
       }
       result.extent1 = ext1
       result.extent2 = ext2
-
-      result.fillInDeadEnds();
-      result.buildGraph();
-
       return result;
    }
 
-   fillInDeadEnds() {
-      let deadEnds = 1;
-      while (deadEnds > 0) {
-         deadEnds = 0;
-
-         for (let j = this.extent1.y + 1; j <= this.extent2.y - 1; j++) {
-            for (let i = this.extent1.x + 1; i <= this.extent2.x - 1; i++) {
-               const sq = this.squareAt(i, j)!;
-               const n = this.glyphAt(i, j, Compass.North);
-               const s = this.glyphAt(i, j, Compass.South);
-               const e = this.glyphAt(i, j, Compass.East);
-               const w = this.glyphAt(i, j, Compass.West);
-
-               let g = [n,s,e,w].sort().join('');
-               if (sq.glyph === '.' && g === '###.') {
-                  sq.glyph = '#';
-                  deadEnds++;
-               }
-            }
-         }
-      }
-   }
-
-   buildGraph() {
+   buildGraph(level : number) {
       for (let y = this.extent1.y; y <= this.extent2.y; y++) {
          for (let x = this.extent1.x; x <= this.extent2.x; x++) {
-            this.addNode(this.squareAt(x, y)!);
+            this.addNode(this.squareAt(x, y)!, level);
          }
       }
    }
 
-   addNode(sq: MazeSquare) {
+   addNode(sq: MazeSquare, level: number) {
       type EdgeRef = { [id: string]: number };
+      const squareId = sq.id();
+      const levelId = ','+level;
 
       if (sq.glyph === '.') {
          const neighbours : (MazeSquare | null)[] = [
@@ -132,31 +115,25 @@ export class Maze {
          // add the neighbours
          let edges : EdgeRef = {}
          for (const neighbour of neighbours.filter(k => k !== null && k.glyph === '.')) {
-            edges[neighbour!.id()] = 1;
+            edges[neighbour!.id() + levelId] = 1;
          }
 
          // add the linked squares
-         if (sq.label !== '') {
-            const portals = this.findPortals(sq.label);
-            if (portals.length > 2)
-               throw new Error(`too many portals! ${sq.id()}${portals.length}`);
-
-            if (portals.length >= 2) {
-               edges[portals.filter(p => p !== sq.id())[0]] = 1;
-            }
+         if (sq.label !== '' && sq.label !== 'AA' && sq.label !== 'ZZ') {
+            const portals = this.portals.filter(p => p.label === sq.label && p.id() != squareId);
+            const edgeId = level >= 0 ? ',' + (sq.outer ? (level - 1) : (level + 1)) : levelId;
+            edges[portals[0].id() + edgeId] = 1;
          }
 
-         this.graph.addNode(sq.id(), edges);
+         this.graph.addNode(sq.id() + levelId, edges);
       }
    }
 
-   findPortals(label: string) {
-      return Object.keys(this.board).filter(k => this.board[k].label === label);
-   }
+   findMazePath(depth : number, topLevel: number) {
+      Util.range(depth, topLevel).map(n => this.buildGraph(n));
 
-   findMazePath() {
-      const startId = this.board[this.findPortals('AA')[0]].id();
-      const finishId = this.board[this.findPortals('ZZ')[0]].id();
+      const startId = this.portals.filter(p => p.label === 'AA')[0].id()+','+topLevel;
+      const finishId = this.portals.filter(p => p.label === 'ZZ')[0].id()+','+topLevel;
 
       return this.graph.path(startId, finishId, { cost: true }).cost;
    }
@@ -182,15 +159,13 @@ class Solution implements ISolution {
    solvePart1() : string {
       const input = new InputFile(this.dayNumber).readLines();
       const maze = Maze.fromInput(input);
-      //maze.print();
-
-      return ''+maze.findMazePath();
+      return ''+maze.findMazePath(1, -1);
    }
 
    solvePart2() : string {
       const input = new InputFile(this.dayNumber).readLines();
-
-      return '';
+      const maze = Maze.fromInput(input);
+      return ''+maze.findMazePath(50, 0);
    }
 }
 
