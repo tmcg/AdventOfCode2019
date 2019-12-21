@@ -10,6 +10,6 @@ describe(`Advent of Code Day ${solution.dayNumber}`, () => {
   });
 
   it('should solve part 2', () => {
-    expect(solution.solvePart2()).to.equal('zz');
+    expect(solution.solvePart2()).to.equal('1144498646');
   });
 });

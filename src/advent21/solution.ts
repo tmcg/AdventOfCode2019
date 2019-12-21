@@ -25,7 +25,7 @@ export class SpringDroid extends BasicIntStream {
 
       let debug = '';
       for (let n of this.output) {
-         debug += n < 256 ? String.fromCharCode(n) : ''+n;
+         debug += String.fromCharCode(n);
       }
       console.log(debug);
       return 0;
@@ -39,6 +39,7 @@ class Solution implements ISolution {
       const input = new InputFile(this.dayNumber).readText();
       const droid = new SpringDroid(input);
 
+      // (!(C ^ B) ^ D) v !A
       droid.command('NOT C J');
       droid.command('NOT J J');
       droid.command('NOT B T');
@@ -58,18 +59,17 @@ class Solution implements ISolution {
       const input = new InputFile(this.dayNumber).readText();
       const droid = new SpringDroid(input);
 
-      // not working...
-      droid.command('NOT C J');
-      droid.command('NOT J J');
+      // (!A v !B v !C) ^ D ^ (E v H)
+      droid.command('NOT A J');
       droid.command('NOT B T');
-      droid.command('NOT T T');
-      droid.command('AND T J');
+      droid.command('OR J T');
+      droid.command('NOT C J');
+      droid.command('OR J T');
+      droid.command('AND D T');
+      droid.command('NOT E J');
       droid.command('NOT J J');
-      droid.command('NOT D T');
-      droid.command('NOT T T');
+      droid.command('OR H J');
       droid.command('AND T J');
-      droid.command('NOT A T');
-      droid.command('OR T J');
 
       return ''+droid.survey('RUN');
    }
