@@ -19,7 +19,7 @@ describe(`Advent of Code Day ${solution.dayNumber}`, () => {
     expect(maze.board[1].map(x => x.glyph).join('')).to.equal('#b.A.@.a#');
     expect(maze.board[2].map(x => x.glyph).join('')).to.equal('#########');
 
-    expect(Object.keys(maze.keys).sort()).eql(['a','b']);
+    expect(Object.keys(maze.keys).sort()).eql(['@','a','b']);
     expect(maze.keys['a'].x).to.equal(7);
     expect(maze.keys['a'].y).to.equal(1);
     expect(maze.keys['b'].x).to.equal(1);
@@ -28,9 +28,6 @@ describe(`Advent of Code Day ${solution.dayNumber}`, () => {
     expect(Object.keys(maze.doors).sort()).eql(['A']);
     expect(maze.doors['A'].x).to.equal(3);
     expect(maze.doors['A'].y).to.equal(1);
-
-    expect(maze.origin.x).to.equal(5);
-    expect(maze.origin.y).to.equal(1);
   });
 
   it('should find path to key a', () => {
@@ -42,15 +39,15 @@ describe(`Advent of Code Day ${solution.dayNumber}`, () => {
 
     const maze = VaultMaze.fromInput(input);
 
-    const p1 = maze.pathToKey(maze.origin, 'a', []);
+    const p1 = maze.pathToKey(maze.keys['@'], 'a', '');
     expect(p1.cost).to.equal(2);
     expect(p1.path).eql(['5,1', '6,1', '7,1']);
 
-    const p2 = maze.pathToKey(maze.origin, 'b', [])
+    const p2 = maze.pathToKey(maze.keys['@'], 'b', '')
     expect(p2.cost).to.equal(0);
     expect(p2.path).to.equal(null);
 
-    const p3 = maze.pathToKey(maze.keys['a'], 'b', ['a']);
+    const p3 = maze.pathToKey(maze.keys['a'], 'b', 'a');
     expect(p3.cost).to.equal(6);
     expect(p3.path).eql(['7,1','6,1','5,1','4,1','3,1','2,1','1,1']);
   });
@@ -108,6 +105,20 @@ describe(`Advent of Code Day ${solution.dayNumber}`, () => {
     const maze = VaultMaze.fromInput(input);
     expect(maze.shortestPathToKeys()).to.equal(99999);
   });
+/*
+  it('should find path to all keys (5)', () => {
+    const input = [
+      '#################',
+      '#..D..a...b..C.g#',
+      '########@########',
+      '#f.B..c...d..A.e#',
+      '#################',
+    ];
+
+    const maze = VaultMaze.fromInput(input);
+    expect(maze.shortestPathToKeys()).to.equal(99999);
+  });
+*/
 
   it('should solve part 1', () => {
     expect(solution.solvePart1()).to.equal('zz');

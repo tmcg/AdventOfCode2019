@@ -29,14 +29,15 @@ export class VaultSquare extends Vector2 {
    }
 
    isDoor() : boolean { return this.glyph >= 'A' && this.glyph <= 'Z'; }
-   isKey() : boolean { return this.glyph >= 'a' && this.glyph <= 'z'; }
+   isKey() : boolean { return (this.glyph >= 'a' && this.glyph <= 'z') || this.glyph === '@'; }
 }
 
 export class VaultMaze {
    board: VaultSquare[][] = [];
    keys: Dictionary<VaultSquare> = {};
    doors: Dictionary<VaultSquare> = {};
-   origin: VaultSquare = new VaultSquare(0, 0, '@');
+   costs: Dictionary<number> = {};
+   //origin: VaultSquare = new VaultSquare(0, 0, '@');
    graph: Graph = new Graph;
 
    doorNames = () => Object.keys(this.doors);
@@ -58,9 +59,6 @@ export class VaultMaze {
 
             if (sq.isDoor()) { maze.doors[glyph] = sq; }
             if (sq.isKey()) { maze.keys[glyph] = sq; }
-            if (glyph === '@') {
-               maze.origin = sq;
-            }
             maze.board[y].push(sq);
          }
       }
@@ -70,6 +68,24 @@ export class VaultMaze {
             maze.addNode(maze.squareAt(x, y));
          }
       }
+
+      // Pre-calculate key costs
+      /*
+      let costNames = maze.keyNames();
+      for (let j = 0; j < costNames.length; j++) {
+         for (let i = 0; i < costNames.length; i++) {
+            if (costNames[i] < costNames[j]) {
+               const from = maze.keys[costNames[i]]
+               const to = maze.keys[costNames[j]];
+
+               const cost = maze.graph.path(from.id(), to.id(), { cost: true }).cost;
+               console.log(`saving cost ${costNames[i]}${costNames[j]} = ${cost}`)
+               maze.costs[`${costNames[i]}${costNames[j]}`] = cost;
+               maze.costs[`${costNames[j]}${costNames[i]}`] = cost;
+            }
+         }
+      }
+      */
 
       //TODO: simplify corridors & dead ends?
       return maze;
@@ -97,86 +113,77 @@ export class VaultMaze {
       for (const neighbour of [n,s,e,w].filter(k => k.glyph !== '#')) {
          edges[neighbour.id()] = 1;
       }
-
-      //this.nodesToAdd.push( { id: sq.id(), edges });
       this.graph.addNode(sq.id(), edges);
    }
 
-   pathToKey(from: VaultSquare, keyName: string, collected: string[]) : PathCost {
+   pathToKey(from: VaultSquare, keyName: string, collected: string) : PathCost {
       const isLocked = (name: string) => !collected.includes(name.toLowerCase());
       const lockedDoors = this.doorNames().filter(isLocked).map(d => this.doors[d].id())
-      const found = this.graph.path(from.id(), this.keyId(keyName), { avoid: lockedDoors, cost: true })
-
-
-      //const pathx = found.path !== null ? found.path.join('  ') : '(null)';
-      //console.log(`>> path to ${keyName} = ${pathx}`);
-      return found;
+      return this.graph.path(from.id(), this.keyId(keyName), { avoid: lockedDoors, cost: true })
    }
 
-   availableKeys(from: VaultSquare, collected: string[]) : VaultWalk[] {
+   availableKeys(from: VaultSquare, collected: string) : VaultWalk[] {
       return this.keyNames()
          .filter(k => !collected.includes(k))
          .map(k => { return <VaultWalk>{ glyph: k, walk: this.pathToKey(from, k, collected) } })
          .filter(p => p.walk.path != null);
    }
 
-   logWalksCost(prefix: string, vw: VaultWalk[]) {
-      console.log(`${prefix}${vw.map(w => w.glyph+'('+w.walk.cost+')').join(', ')}`);
-   }
-
-   totalCost(walks : VaultWalk[]) {
-      return walks.map(w => w.walk.cost).reduce((a, c) => a + c);
-   }
-
    shortestPathToKeys() : number {
-      const walks = this.collectNextKey(this.origin, [], []);
-      const cost = this.totalCost(walks);
-      this.logWalksCost(`\nRESULT >> cost = ${cost}; path = `, walks);
-      return cost;
+      const minCost = this.collectNextKey(this.keys['@'], '@', 0);
+
+      /*
+      const allCosts = Object.keys(this.costs)
+         .filter(k => k.length === this.keyNames().length)
+         .map(k => this.costs[k]);
+
+      const minCost = Math.min(...allCosts);
+      */
+
+      console.log(`\nRESULT >> cost = ${minCost}`);
+      return minCost;
    }
 
-   collectNextKey(pos: VaultSquare, collected: string[], walks: VaultWalk[]): VaultWalk[] {
+   findCostToKey(from: string, to: string) : number {
+      return this.graph.path(this.keys[from].id(), this.keys[to].id(), { cost: true }).cost;
+   }
 
-      // TODO:PRECOMPUTE KEY to KEY PATH COSTS!!!
+   collectNextKey(pos: VaultSquare, collected: string, sunkCost: number): number {
 
-      //console.log(`\nCOLLECT NEXT (${pos.id()} = "${pos.glyph}")  Collected: [${collected.join(',')}]`);
       const available = this.availableKeys(pos, collected);
-      let bestWalk : VaultWalk[] = [];
       let bestCost : number = 1000000000;
 
       if (available.length === 0) {
-         return walks;
+         return sunkCost;
       }
 
-      //console.log(`>> Available: [${available.map(a => a.glyph).join(',')}]`);
+      //console.log(`\nCOLLECT NEXT (${pos.id()} = "${pos.glyph}")  Collected: "${collected}"`);
+      //console.log(`>> AVAILABLE: [${available.map(a => a.glyph).join(',')}]`);
 
       for (let k of available) {
-         //console.log(`    >> Move To "${k.glyph}"`);
+         const collectedPath = collected + k.glyph;
+         const nextPath = `${pos.glyph}${k.glyph}`;
+         console.log(collectedPath);
 
-         // pick up any stray keys
-         let nextPath = k.walk.path;
-         let nextWalks = walks.concat(k);
-         let nextCollected = collected.slice();
-         for (let kn of this.keyNames()) {
-            const kp = this.keys[kn].id();
-            if (nextPath.includes(kp) && !collected.includes(kn)) {
-               nextCollected.concat(kn);
-            }
+         if (!Object.keys(this.costs).includes(nextPath)) {
+            //console.log(`calculating cost...`)
+            const nextCost = this.findCostToKey(pos.glyph, k.glyph);
+            this.costs[nextPath] = nextCost
+
+            //console.log(`next ${nextCost} calc ${calcCost}`)
+            //console.log(`saving cost for ${collectedPath} (${calcCost})`)
+            //this.costs[collectedPath] = sunkCost + nextCost;
+
+            //console.log(this.costs);
          }
 
-         const fullWalk = this.collectNextKey(this.keys[k.glyph], nextCollected.concat(k.glyph), nextWalks);
+         const fullCost = this.collectNextKey(this.keys[k.glyph], collectedPath, sunkCost + this.costs[nextPath]);
 
-         if (fullWalk.length > 0) {
-            const fullCost = this.totalCost(fullWalk);
-            //this.logWalksCost(`Walk: ${k.glyph} cost=${fullCost} >> `,fullWalk);
-
-            if (fullWalk.length > 0 && fullCost < bestCost) {
-               bestWalk = fullWalk;
-               bestCost = fullCost;
-            }
+         if (fullCost < bestCost) {
+            bestCost = fullCost;
          }
       }
-      return bestWalk;
+      return bestCost;
    }
 }
 
